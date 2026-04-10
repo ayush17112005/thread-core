@@ -1,5 +1,6 @@
 import express from "express";
 import { connectDB } from "./src/configs/db.js";
+import authRoutes from "./src/routes/authRoutes.js";
 import dotenv from "dotenv";
 dotenv.config();
 const app = express();
@@ -10,7 +11,7 @@ await connectDB();
 app.get("/", (req, res) => {
   res.send("Health check successful!");
 });
-
+app.use("/api/users", authRoutes);
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
