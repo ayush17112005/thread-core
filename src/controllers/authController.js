@@ -46,5 +46,19 @@ const loginUser = async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 };
-
-export { registerUser, loginUser };
+const getMe = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const user = await getMeService(userId);
+    return res.status(200).json({
+      success: true,
+      user,
+    });
+  } catch (e) {
+    if (e.message === "User not found") {
+      return res.status(404).json({ message: e.message });
+    }
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+export { registerUser, loginUser, getMe };
