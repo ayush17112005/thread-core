@@ -1,8 +1,6 @@
 import { User } from "../models/userSchema.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import dotenv from "dotenv";
-dotenv.config();
 const registerUserService = async (username, email, password) => {
   //Check if user already exists
   const existingUser = await User.findOne({ $or: [{ username }, { email }] });
@@ -43,4 +41,13 @@ const loginUserService = async (email, password) => {
     token,
   };
 };
-export { registerUserService, loginUserService };
+
+const getMeService = async (userId) => {
+  const user = await User.findById(userId).select("-password");
+  if (!user) {
+    throw new Error("User not found");
+  }
+  return user;
+};
+
+export { registerUserService, loginUserService, getMeService };
