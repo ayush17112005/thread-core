@@ -28,4 +28,35 @@ const createCommunityService = async (name, adminId, description) => {
   return newCommunity;
 };
 
-export { createCommunityService };
+const joinCommunityService = async (communityId, userId) => {
+  //see if the community exists
+  const community = await Community.findById(communityId);
+  if (!community) {
+    throw new Error("Community does not exist");
+  }
+  //see if the user is already a member
+  const existingLink = await UserCommunity.findOne({
+    user: userId,
+    community: communityId,
+  });
+  if (existingLink) {
+    throw new Error("User already a member of this community");
+  }
+  //Now if all okay then create a link between user and community
+  const newMemberLink = new UserCommunity({
+    user: userId,
+    community: communityId,
+  });
+  await newMemberLink.save();
+  /*
+  community.membersCount += 1; 
+  by updating the members count like this we will have race condition problem because if two users try to join at the same time then both will read the same membersCount and then both will update it to same value + 1 so we will end up with wrong members count. To avoid this we will use atomic operator $inc which will ensure that even if two users try to join at the same time then the membersCount will be updated correctly without any
+  */
+  //This solves the race condition problem and ensures that membersCount is always accurate even when multiple users are joining the community simultaneously.
+  await Community.findByIdAndUpdate(communityId, {
+    $inc: { membersCount: 1 },
+  });
+  return community;
+};
+
+export { createCommunityService, joinCommunityService };

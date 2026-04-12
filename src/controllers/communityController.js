@@ -1,4 +1,7 @@
-import { createCommunityService } from "../services/communityService.js";
+import {
+  createCommunityService,
+  joinCommunityService,
+} from "../services/communityService.js";
 
 const createCommunityController = async (req, res) => {
   try {
@@ -28,4 +31,25 @@ const createCommunityController = async (req, res) => {
   }
 };
 
-export { createCommunityController };
+const joinCommunityController = async (req, res) => {
+  try {
+    const communityId = req.params.communityId;
+    const userId = req.user.id; //we are getting this from auth middleware
+    if (!communityId) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Community ID is required" });
+    }
+    await joinCommunityService(communityId, userId);
+    return res.status(200).json({ success: true, message: "Joined Community" });
+  } catch (e) {
+    if (e.message === "Community does not exist") {
+      return res.status(404).json({ success: false, message: e.message });
+    }
+    if (e.message === "User already a member of this community") {
+      return res.status(409).json({ success: false, message: e.message });
+    }
+    return res.status(500).json({ message: "Server Error", error: e.message });
+  }
+};
+export { createCommunityController, joinCommunityController };
