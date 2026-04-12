@@ -18,11 +18,6 @@ const userSchema = new Schema(
       type: String,
       required: true,
     },
-    // Array of ObjectIds referencing the communities the user is a member of
-    communities: {
-      type: [{ type: Schema.Types.ObjectId, ref: "Community" }],
-    },
-
     profile: {
       type: String,
       default: "",
