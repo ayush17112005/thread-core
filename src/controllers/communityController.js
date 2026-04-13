@@ -1,6 +1,7 @@
 import {
   createCommunityService,
   joinCommunityService,
+  getCommunityFeedService,
 } from "../services/communityService.js";
 
 const createCommunityController = async (req, res) => {
@@ -52,4 +53,28 @@ const joinCommunityController = async (req, res) => {
     return res.status(500).json({ message: "Server Error", error: e.message });
   }
 };
-export { createCommunityController, joinCommunityController };
+
+const getCommunityFeedController = async (req, res) => {
+  try {
+    const communityId = req.params.communityId;
+    const cursor = req.query.cursor || null;
+    const limit = parseInt(req.query.limit) || 10;
+    const { posts, newCursor, hasMore } = await getCommunityFeedService(
+      communityId,
+      cursor,
+      limit,
+    );
+    return res.status(200).json({ posts, cursor: newCursor, hasMore });
+  } catch (e) {
+    if (e.message === "Community does not exist") {
+      return res.status(404).json({ success: false, message: e.message });
+    }
+    return res.status(500).json({ message: "Server Error", error: e.message });
+  }
+};
+
+export {
+  createCommunityController,
+  joinCommunityController,
+  getCommunityFeedController,
+};
