@@ -1,5 +1,6 @@
 import { Community } from "../models/Community.js";
 import { UserCommunity } from "../models/userCommunity.js";
+import { Post } from "../models/Post.js";
 const createCommunityService = async (name, adminId, description) => {
   // 1. Force lowercase and replace all spaces with underscores
   const formattedName = name.trim().toLowerCase().replace(/\s+/g, "_");
@@ -59,4 +60,33 @@ const joinCommunityService = async (communityId, userId) => {
   return community;
 };
 
-export { createCommunityService, joinCommunityService };
+const getCommunityFeedService = async (communityId, cursor, limit) => {
+  const query = {
+    communityId,
+  };
+  if (cursor) {
+    query._id = { $lt: cursor };
+  }
+
+  //Now Fetch posts
+  const posts = await Post.find(query)
+    .sort({ _id: -1 })
+    .limit(limit + 1)
+    .populate("userId", "username")
+    .populate("communityId", "name");
+
+  //check if more posts are there
+  const hasMore = posts.length > limit;
+  if (hasMore) {
+    posts.pop(); //remove the extra post
+  }
+  //set the cursor to the last post id
+  const newCursor = hasMore ? posts[posts.length - 1]._id : null;
+  return { posts, newCursor, hasMore };
+};
+
+export {
+  createCommunityService,
+  joinCommunityService,
+  getCommunityFeedService,
+};

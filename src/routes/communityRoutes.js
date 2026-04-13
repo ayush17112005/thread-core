@@ -3,6 +3,7 @@ import { protectRoute } from "../middlewares/authMiddleware.js";
 import {
   createCommunityController,
   joinCommunityController,
+  getCommunityFeedController,
 } from "../controllers/communityController.js";
 import { upload } from "../middlewares/multerMiddleware.js";
 import { createPostController } from "../controllers/postController.js";
@@ -22,4 +23,7 @@ router.post(
   upload.single("image"),
   createPostController,
 );
+
+//Get the community Feed
+router.get("/:communityId/posts", getCommunityFeedController);
 export default router;
