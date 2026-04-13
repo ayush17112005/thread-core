@@ -1,5 +1,6 @@
 import { Post } from "../models/Post.js";
 import { UserCommunity } from "../models/userCommunity.js";
+import { Vote } from "../models/Vote.js";
 const createPostService = async (
   userId,
   communityId,
@@ -27,4 +28,58 @@ const createPostService = async (
   return post;
 };
 
-export { createPostService };
+const votePostService = async (postId, userId, voteType) => {
+  const post = await Post.findById(postId);
+  if (!post) {
+    throw new Error("Post does not exist");
+  }
+  const existingVote = await Vote.findOne({ postId, userId });
+  if (existingVote) {
+    //If ther user has already voted
+    if (existingVote.voteType === voteType) {
+      //If the is user is voting the same way then remove the vote
+      await Vote.findOneAndDelete({ postId, userId });
+      if (voteType === "upvote") {
+        await Post.findByIdAndUpdate(postId, {
+          $inc: { upvotes: -1 },
+        });
+      }
+      if (voteType === "downvote") {
+        await Post.findByIdAndUpdate(postId, {
+          $inc: { downvotes: -1 },
+        });
+      }
+    } else {
+      //they are switching their vote
+      if (voteType === "upvote") {
+        await Vote.findOneAndUpdate({ postId, userId }, { voteType: "upvote" });
+        await Post.findByIdAndUpdate(postId, {
+          $inc: { upvotes: 1, downvotes: -1 },
+        });
+      } else if (voteType === "downvote") {
+        await Vote.findOneAndUpdate(
+          { postId, userId },
+          { voteType: "downvote" },
+        );
+        await Post.findByIdAndUpdate(postId, {
+          $inc: { upvotes: -1, downvotes: 1 },
+        });
+      }
+    }
+  } else {
+    //it's a brand new vote
+    const vote = new Vote({
+      userId,
+      postId,
+      voteType,
+    });
+    await vote.save();
+    await Post.findByIdAndUpdate(postId, {
+      $inc: voteType === "upvote" ? { upvotes: 1 } : { downvotes: 1 },
+    });
+  }
+  const updatedPost = await Post.findById(postId);
+  return updatedPost;
+};
+
+export { createPostService, votePostService };
