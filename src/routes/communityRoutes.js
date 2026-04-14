@@ -4,6 +4,7 @@ import {
   createCommunityController,
   joinCommunityController,
   getCommunityFeedController,
+  leaveCommunityController,
 } from "../controllers/communityController.js";
 import { upload } from "../middlewares/multerMiddleware.js";
 import { createPostController } from "../controllers/postController.js";
@@ -18,6 +19,9 @@ router.post("/", protectRoute, createCommunityController);
 
 //Join Community route
 router.post("/:communityId/join", protectRoute, joinCommunityController);
+
+//Leave Community route
+router.delete("/:communityId/leave", protectRoute, leaveCommunityController);
 
 //Create a post in a community
 router.post(

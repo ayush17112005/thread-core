@@ -2,6 +2,7 @@ import {
   createCommunityService,
   joinCommunityService,
   getCommunityFeedService,
+  leaveCommunityService,
 } from "../services/communityService.js";
 
 const createCommunityController = async (req, res) => {
@@ -54,6 +55,28 @@ const joinCommunityController = async (req, res) => {
   }
 };
 
+const leaveCommunityController = async (req, res) => {
+  try {
+    const communityId = req.params.communityId;
+    const userId = req.user.id;
+    if (!userId) {
+      return res
+        .status(401)
+        .json({ success: false, message: "Unauthorized user!!" });
+    }
+    await leaveCommunityService(communityId, userId);
+    return res.status(200).json({ success: true, message: "Left Community" });
+  } catch (e) {
+    if (e.message === "Community does not exist") {
+      return res.status(404).json({ success: false, message: e.message });
+    }
+    if (e.message === "User is not a member of this community") {
+      return res.status(409).json({ success: false, message: e.message });
+    }
+    return res.status(500).json({ message: "Server Error", error: e.message });
+  }
+};
+
 const getCommunityFeedController = async (req, res) => {
   try {
     const communityId = req.params.communityId;
@@ -77,4 +100,5 @@ export {
   createCommunityController,
   joinCommunityController,
   getCommunityFeedController,
+  leaveCommunityController,
 };

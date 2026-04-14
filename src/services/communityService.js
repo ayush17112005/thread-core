@@ -1,6 +1,7 @@
 import { Community } from "../models/Community.js";
 import { UserCommunity } from "../models/userCommunity.js";
 import { Post } from "../models/Post.js";
+import { Comment } from "../models/Comment.js";
 const createCommunityService = async (name, adminId, description) => {
   // 1. Force lowercase and replace all spaces with underscores
   const formattedName = name.trim().toLowerCase().replace(/\s+/g, "_");
@@ -60,6 +61,61 @@ const joinCommunityService = async (communityId, userId) => {
   return community;
 };
 
+const leaveCommunityService = async (communityId, userId) => {
+  const community = await Community.findById(communityId);
+  if (!community) {
+    throw new Error("Community does not exist");
+  }
+
+  if (community.admin.toString() === userId) {
+    if (community.membersCount === 1) {
+      // only member left — delete everything
+      await Community.findByIdAndDelete(communityId);
+      await UserCommunity.deleteMany({ community: communityId });
+      await Post.deleteMany({ communityId: communityId });
+      await Comment.deleteMany({ communityId: communityId });
+    } else {
+      // transfer ownership to oldest member
+      const oldestMemberLink = await UserCommunity.findOne({
+        community: communityId,
+        user: { $ne: userId },
+      }).sort({ createdAt: 1 });
+      // Safety check!
+      if (!oldestMemberLink) {
+        throw new Error("Could not find a successor to transfer admin rights.");
+      }
+      const updatedCommunity = await Community.findOneAndUpdate(
+        // renamed
+        { _id: communityId, admin: userId },
+        { admin: oldestMemberLink.user },
+        { new: true },
+      );
+
+      // delete the admin's link
+      await UserCommunity.findOneAndDelete({
+        user: userId,
+        community: communityId,
+      });
+
+      await Community.findByIdAndUpdate(communityId, {
+        $inc: { membersCount: -1 },
+      });
+    }
+  } else {
+    // normal user leaving
+    const link = await UserCommunity.findOneAndDelete({
+      user: userId,
+      community: communityId,
+    });
+    if (!link) {
+      throw new Error("User is not a member of this community");
+    }
+    await Community.findByIdAndUpdate(communityId, {
+      $inc: { membersCount: -1 },
+    });
+  }
+};
+
 const getCommunityFeedService = async (communityId, cursor, limit) => {
   const query = {
     communityId,
@@ -89,4 +145,5 @@ export {
   createCommunityService,
   joinCommunityService,
   getCommunityFeedService,
+  leaveCommunityService,
 };
