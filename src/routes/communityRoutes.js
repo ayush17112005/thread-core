@@ -7,7 +7,10 @@ import {
 } from "../controllers/communityController.js";
 import { upload } from "../middlewares/multerMiddleware.js";
 import { createPostController } from "../controllers/postController.js";
-import { createCommentController } from "../controllers/commentController.js";
+import {
+  createCommentController,
+  getPostCommentsController,
+} from "../controllers/commentController.js";
 const router = express.Router();
 
 //Create community route
@@ -33,4 +36,6 @@ router.post(
   protectRoute,
   createCommentController,
 );
+//Get comments for a post
+router.get("/:communityId/posts/:postId/comments", getPostCommentsController);
 export default router;
