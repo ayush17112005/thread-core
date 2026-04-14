@@ -27,7 +27,16 @@ const createPostService = async (
   await post.save();
   return post;
 };
-
+const getSinglePostService = async (postId) => {
+  const post = await Post.findById(postId)
+    .populate("userId", "username profile")
+    .populate("communityId", "name")
+    .lean();
+  if (!post) {
+    throw new Error("Post not found");
+  }
+  return post;
+};
 const votePostService = async (postId, userId, voteType) => {
   const post = await Post.findById(postId);
   if (!post) {
@@ -82,4 +91,4 @@ const votePostService = async (postId, userId, voteType) => {
   return updatedPost;
 };
 
-export { createPostService, votePostService };
+export { createPostService, votePostService, getSinglePostService };

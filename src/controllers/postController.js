@@ -1,5 +1,9 @@
 import { uploadToCloudinaryService } from "../services/uploadService.js";
-import { createPostService, votePostService } from "../services/postService.js";
+import {
+  createPostService,
+  votePostService,
+  getSinglePostService,
+} from "../services/postService.js";
 
 const createPostController = async (req, res) => {
   try {
@@ -57,7 +61,23 @@ const createPostController = async (req, res) => {
     return res.status(500).json({ message: "Unexpected error occurred" });
   }
 };
-
+const getSinglePostController = async (req, res) => {
+  try {
+    const postId = req.params.postId;
+    if (!postId) {
+      return res.status(400).json({ message: "Post ID is required" });
+    }
+    const post = await getSinglePostService(postId);
+    return res.status(200).json({ success: true, post: post });
+  } catch (e) {
+    if (e.message === "Post not found") {
+      return res.status(404).json({ success: false, message: e.message });
+    }
+    return res
+      .status(500)
+      .json({ success: false, message: "Server Error", error: e.message });
+  }
+};
 const votePostController = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -80,4 +100,4 @@ const votePostController = async (req, res) => {
     return res.status(500).json({ message: "Unexpected error occurred" });
   }
 };
-export { createPostController, votePostController };
+export { createPostController, votePostController, getSinglePostController };
