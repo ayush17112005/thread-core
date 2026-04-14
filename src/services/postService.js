@@ -91,4 +91,29 @@ const votePostService = async (postId, userId, voteType) => {
   return updatedPost;
 };
 
-export { createPostService, votePostService, getSinglePostService };
+const getHomeFeedPostsService = async (cursor, limit) => {
+  //Get the communities on the nome page
+  let query = {};
+  if (cursor) {
+    query._id = { $lt: cursor };
+  }
+  const posts = await Post.find(query)
+    .sort({ _id: -1 })
+    .limit(limit + 1)
+    .populate("userId", "username")
+    .populate("communityId", "name")
+    .lean();
+  const hasMore = posts.length > limit;
+  if (hasMore) {
+    posts.pop();
+  }
+  const newCursor = hasMore ? posts[posts.length - 1]._id : null;
+  return { posts, newCursor, hasMore };
+};
+
+export {
+  createPostService,
+  votePostService,
+  getSinglePostService,
+  getHomeFeedPostsService,
+};

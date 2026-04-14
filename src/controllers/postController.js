@@ -3,6 +3,7 @@ import {
   createPostService,
   votePostService,
   getSinglePostService,
+  getHomeFeedPostsService,
 } from "../services/postService.js";
 
 const createPostController = async (req, res) => {
@@ -100,4 +101,30 @@ const votePostController = async (req, res) => {
     return res.status(500).json({ message: "Unexpected error occurred" });
   }
 };
-export { createPostController, votePostController, getSinglePostController };
+const getHomeFeedPostsController = async (req, res) => {
+  try {
+    const cursor = req.query.cursor || null;
+    const limit = parseInt(req.query.limit) || 10;
+    const { posts, newCursor, hasMore } = await getHomeFeedPostsService(
+      cursor,
+      limit,
+    );
+    return res.status(200).json({
+      success: true,
+      message: "Global feed fetched successfully",
+      posts,
+      nextCursor: newCursor,
+      hasMore,
+    });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ success: false, message: "Server Error", error: error.message });
+  }
+};
+export {
+  createPostController,
+  votePostController,
+  getSinglePostController,
+  getHomeFeedPostsController,
+};
