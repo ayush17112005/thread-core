@@ -1,6 +1,7 @@
 import express from "express";
 import { connectDB } from "./src/configs/db.js";
 import authRoutes from "./src/routes/authRoutes.js";
+import userRoutes from "./src/routes/userRoutes.js";
 import communityRoutes from "./src/routes/communityRoutes.js";
 import postRoutes from "./src/routes/postRoutes.js";
 import dotenv from "dotenv";
@@ -13,6 +14,7 @@ app.get("/", (req, res) => {
   res.send("Health check successful!");
 });
 app.use("/api/users", authRoutes);
+app.use("/api/users", userRoutes);
 app.use("/api/community", communityRoutes);
 app.use("/api/posts", postRoutes);
 app.listen(port, () => {

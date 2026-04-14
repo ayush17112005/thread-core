@@ -22,6 +22,10 @@ const userSchema = new Schema(
       type: String,
       default: "",
     },
+    bio: {
+      type: String,
+      default: "",
+    },
   },
   { timestamps: true }, //this will automatically add the createdAt and updatedAt fields to schema
 );
