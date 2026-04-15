@@ -73,6 +73,7 @@ const leaveCommunityService = async (communityId, userId) => {
       const postIds = (await Post.find({ communityId }).select("_id")).map(
         (p) => p._id,
       );
+      //We can use here the transaction to make the deletion atomic but for simplicity we will just use Promise.all here :)
       await Promise.all([
         Community.findByIdAndDelete(communityId),
         UserCommunity.deleteMany({ community: communityId }),
