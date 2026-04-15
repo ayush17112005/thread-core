@@ -2,6 +2,7 @@ import { Community } from "../models/Community.js";
 import { UserCommunity } from "../models/userCommunity.js";
 import { Post } from "../models/Post.js";
 import { Comment } from "../models/Comment.js";
+import { Vote } from "../models/Vote.js";
 const createCommunityService = async (name, adminId, description) => {
   // 1. Force lowercase and replace all spaces with underscores
   const formattedName = name.trim().toLowerCase().replace(/\s+/g, "_");
@@ -69,11 +70,16 @@ const leaveCommunityService = async (communityId, userId) => {
 
   if (community.admin.toString() === userId) {
     if (community.membersCount === 1) {
-      // only member left — delete everything
-      await Community.findByIdAndDelete(communityId);
-      await UserCommunity.deleteMany({ community: communityId });
-      await Post.deleteMany({ communityId: communityId });
-      await Comment.deleteMany({ communityId: communityId });
+      const postIds = (await Post.find({ communityId }).select("_id")).map(
+        (p) => p._id,
+      );
+      await Promise.all([
+        Community.findByIdAndDelete(communityId),
+        UserCommunity.deleteMany({ community: communityId }),
+        Post.deleteMany({ communityId: communityId }),
+        Comment.deleteMany({ communityId: communityId }),
+        Vote.deleteMany({ postId: { $in: postIds } }),
+      ]);
     } else {
       // transfer ownership to oldest member
       const oldestMemberLink = await UserCommunity.findOne({
