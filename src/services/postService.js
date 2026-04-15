@@ -1,3 +1,4 @@
+import { Comment } from "../models/Comment.js";
 import { Post } from "../models/Post.js";
 import { UserCommunity } from "../models/userCommunity.js";
 import { Vote } from "../models/Vote.js";
@@ -111,9 +112,25 @@ const getHomeFeedPostsService = async (cursor, limit) => {
   return { posts, newCursor, hasMore };
 };
 
+const deletePostService = async (postId, userId) => {
+  const post = await Post.findById(postId);
+  if (!post) {
+    throw new Error("Post does not exist");
+  }
+  if (post.userId.toString() !== userId) {
+    throw new Error("You are not authorized to delete this post");
+  }
+  //Query Optimization using promise.all
+  await Promise.all([
+    Post.findByIdAndDelete(postId),
+    Comment.deleteMany({ postId }),
+    Vote.deleteMany({ postId }),
+  ]);
+};
 export {
   createPostService,
   votePostService,
   getSinglePostService,
   getHomeFeedPostsService,
+  deletePostService,
 };

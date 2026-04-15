@@ -4,6 +4,7 @@ import {
   votePostService,
   getSinglePostService,
   getHomeFeedPostsService,
+  deletePostService,
 } from "../services/postService.js";
 
 const createPostController = async (req, res) => {
@@ -122,9 +123,26 @@ const getHomeFeedPostsController = async (req, res) => {
       .json({ success: false, message: "Server Error", error: error.message });
   }
 };
+const deletePostController = async (req, res) => {
+  try {
+    const postId = req.params.postId;
+    const userId = req.user.id;
+    await deletePostService(postId, userId);
+    return res.status(200).json({ message: "Post deleted successfully" });
+  } catch (e) {
+    if (e.message === "Post does not exist") {
+      return res.status(404).json({ message: e.message });
+    }
+    if (e.message === "You are not authorized to delete this post") {
+      return res.status(403).json({ message: e.message });
+    }
+    return res.status(500).json({ message: "Unexpected error occurred" });
+  }
+};
 export {
   createPostController,
   votePostController,
   getSinglePostController,
   getHomeFeedPostsController,
+  deletePostController,
 };

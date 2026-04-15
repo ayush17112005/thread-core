@@ -4,6 +4,7 @@ import { votePostController } from "../controllers/postController.js";
 import {
   getSinglePostController,
   getHomeFeedPostsController,
+  deletePostController,
 } from "../controllers/postController.js";
 const router = express.Router();
 
@@ -11,4 +12,5 @@ const router = express.Router();
 router.post("/:postId/vote", protectRoute, votePostController);
 router.get("/:postId", getSinglePostController);
 router.get("/", getHomeFeedPostsController);
+router.delete("/:postId", protectRoute, deletePostController);
 export default router;
