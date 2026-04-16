@@ -30,7 +30,7 @@ It includes authentication, communities, posts, comments (with replies), voting,
 - Bcrypt
 - Multer (memory storage)
 - Cloudinary + Streamifier
-
+  
 ## Project Structure
 
 ```text
@@ -118,6 +118,10 @@ Feeds and comments support cursor-based pagination:
 - `Post`: author, community, title, content, image, upvotes, downvotes
 - `Comment`: content, user, post, community, optional parent comment
 - `Vote`: user, post, voteType with unique (`userId`, `postId`) index
+
+## DB Schema
+<img width="971" height="569" alt="image" src="https://github.com/user-attachments/assets/1e6e6910-be00-43d1-88a2-27e81716ae83" />
+
 
 ## Notes
 
