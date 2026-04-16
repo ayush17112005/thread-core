@@ -1,4 +1,4 @@
-# Mini Reddit Clone API
+# thread-core API
 
 A backend API for a thread-core platform built with Node.js, Express, and MongoDB.
 
