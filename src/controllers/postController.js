@@ -5,6 +5,7 @@ import {
   getSinglePostService,
   getHomeFeedPostsService,
   deletePostService,
+  savePostService,
 } from "../services/postService.js";
 
 const createPostController = async (req, res) => {
@@ -139,10 +140,30 @@ const deletePostController = async (req, res) => {
     return res.status(500).json({ message: "Unexpected error occurred" });
   }
 };
+
+const savePostController = async (req, res) => {
+  try {
+    const postId = req.postId;
+    const userId = req.user.id;
+    const result = await savePostService(userId, postId);
+    res.status(200).json({
+      success: true,
+      message: result.action === "saved" ? "Post saved" : "Post unsaved",
+      action: result.action,
+    });
+  } catch (e) {
+    if (e.message === "Post does not exist") {
+      return res.status(404).json({ message: e.message });
+    }
+    return res.status(500).json({ message: "Unexpected error occurred" });
+  }
+};
+
 export {
   createPostController,
   votePostController,
   getSinglePostController,
   getHomeFeedPostsController,
   deletePostController,
+  savePostController,
 };

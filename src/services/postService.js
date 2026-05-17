@@ -1,5 +1,6 @@
 import { Comment } from "../models/Comment.js";
 import { Post } from "../models/Post.js";
+import { SavePosts } from "../models/SavePosts.js";
 import { UserCommunity } from "../models/userCommunity.js";
 import { Vote } from "../models/Vote.js";
 const createPostService = async (
@@ -127,10 +128,37 @@ const deletePostService = async (postId, userId) => {
     Vote.deleteMany({ postId }),
   ]);
 };
+
+const savePostService = async (userId, postId) => {
+  const post = await Post.findById(postId);
+  if (!post) {
+    throw new Error("Post does not exist");
+  }
+
+  //Now if post already exists in the SavePosts then delete it
+  const existingPost = await SavePosts.findOne({ userId, postId });
+  if (existingPost) {
+    await SavePosts.findOneAndDelete({ userId, postId });
+    return {
+      action: "unsaved",
+    };
+  }
+
+  //If the postDoes not already exists in SavePosts means user is saving it
+  const newPost = new SavePosts({
+    userId,
+    postId,
+  });
+  await newPost.save();
+  return {
+    action: "saved",
+  };
+};
 export {
   createPostService,
   votePostService,
   getSinglePostService,
   getHomeFeedPostsService,
   deletePostService,
+  savePostService,
 };
