@@ -143,7 +143,7 @@ const deletePostController = async (req, res) => {
 
 const savePostController = async (req, res) => {
   try {
-    const postId = req.postId;
+    const postId = req.params.postId;
     const userId = req.user.id;
     const result = await savePostService(userId, postId);
     res.status(200).json({
