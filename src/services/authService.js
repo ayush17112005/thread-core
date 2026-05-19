@@ -1,6 +1,7 @@
 import { User } from "../models/userSchema.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import { generateTokens } from "../utils/generateTokens.js";
 const registerUserService = async (username, email, password) => {
   //Check if user already exists
   const existingUser = await User.findOne({ $or: [{ username }, { email }] });
@@ -13,7 +14,7 @@ const registerUserService = async (username, email, password) => {
   return newUser;
 };
 
-const loginUserService = async (email, password) => {
+const loginUserService = async (email, password, res) => {
   //see if this email is in db or not
   const user = await User.findOne({ email });
   if (!user) {
@@ -25,21 +26,27 @@ const loginUserService = async (email, password) => {
   }
 
   //IF the credentials are correct then give him token and let him in
-  const token = jwt.sign(
-    {
-      sub: user._id,
-    },
-    process.env.JWT_SECRET,
-    { expiresIn: "1h" }, //because it's a access token it's lifespan is short, we will create refresh token in future which will have longer lifespan
-  );
+  const accessToken = generateTokens(user, res);
   return {
     user: {
       id: user._id,
       email: user.email,
       name: user.username,
     },
-    token,
+    accessToken,
   };
+};
+
+//When accessToken expires, frontend will hit this endpoint to get a new access token
+const refreshAccessTokenService = async (refreshToken) => {
+  //Verify the refrest token
+  const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+  const newAccessToken = jwt.sign(
+    { sub: decoded.sub },
+    process.env.ACCESS_TOKEN_SECRET,
+    { expiresIn: "1h" },
+  );
+  return newAccessToken;
 };
 
 const getMeService = async (userId) => {
@@ -50,4 +57,9 @@ const getMeService = async (userId) => {
   return user;
 };
 
-export { registerUserService, loginUserService, getMeService };
+export {
+  registerUserService,
+  loginUserService,
+  getMeService,
+  refreshAccessTokenService,
+};
