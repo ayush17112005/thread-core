@@ -9,8 +9,8 @@ export const protectRoute = (req, res, next) => {
       return res.status(401).json({ message: "Unauthorized User" });
     }
     //If token is there then verify it
-    const verifiedToken = jwt.verify(token, process.env.JWT_SECRET);
-    console.log(verifiedToken);
+    const verifiedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+    // console.log(verifiedToken);
     req.user = { id: verifiedToken.sub };
     next();
   } catch (e) {

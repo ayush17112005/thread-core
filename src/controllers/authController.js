@@ -2,6 +2,7 @@ import {
   registerUserService,
   loginUserService,
   getMeService,
+  refreshAccessTokenService,
 } from "../services/authService.js";
 
 const registerUser = async (req, res) => {
@@ -34,17 +35,36 @@ const loginUser = async (req, res) => {
     if (!email || !password) {
       return res.status(400).json({ message: "Please provide all fields" });
     }
-    const { user, token } = await loginUserService(email, password);
+    const { user, accessToken } = await loginUserService(email, password, res);
     return res.status(200).json({
       success: true,
       user,
-      token,
+      accessToken,
     });
   } catch (e) {
     if (e.message === "Invalid email or password") {
       return res.status(401).json({ message: e.message });
     }
     return res.status(500).json({ message: "Server error" });
+  }
+};
+
+//Logout functionality: will implement later
+
+const refreshAccessToken = async (req, res) => {
+  try {
+    const refreshToken = req.cookies.refreshToken;
+    if (!refreshToken) {
+      return res.status(401).json({ message: "No refresh token provided" });
+    }
+    const newAccessToken = await refreshAccessTokenService(refreshToken);
+    return res.status(200).json({ success: true, accessToken: newAccessToken });
+  } catch (e) {
+    if (e.name === "TokenExpiredError") {
+      res.clearCookie("refreshToken");
+      return res.status(401).json({ message: "Refresh token expired" });
+    }
+    res.status(401).json({ message: "Invalid refresh token" });
   }
 };
 const getMe = async (req, res) => {
@@ -62,4 +82,4 @@ const getMe = async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 };
-export { registerUser, loginUser, getMe };
+export { registerUser, loginUser, getMe, refreshAccessToken };
