@@ -35,7 +35,18 @@ const loginUser = async (req, res) => {
     if (!email || !password) {
       return res.status(400).json({ message: "Please provide all fields" });
     }
-    const { user, accessToken } = await loginUserService(email, password, res);
+    const { user, accessToken, refreshToken } = await loginUserService(
+      email,
+      password,
+    );
+
+    // THE CONTROLLER sets the cookie using the Express 'res' object
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
     return res.status(200).json({
       success: true,
       user,
@@ -50,7 +61,13 @@ const loginUser = async (req, res) => {
 };
 
 //Logout functionality: will implement later
-
+const logOut = async (req, res) => {
+  res.clearCookie("refreshToken", {
+    httpOnly: true,
+    sameSite: "strict",
+  });
+  res.status(200).json({ success: true, message: "Logged Out" });
+};
 const refreshAccessToken = async (req, res) => {
   try {
     const refreshToken = req.cookies.refreshToken;
@@ -82,4 +99,4 @@ const getMe = async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 };
-export { registerUser, loginUser, getMe, refreshAccessToken };
+export { registerUser, loginUser, getMe, refreshAccessToken, logOut };

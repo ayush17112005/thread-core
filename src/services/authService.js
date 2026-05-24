@@ -14,7 +14,7 @@ const registerUserService = async (username, email, password) => {
   return newUser;
 };
 
-const loginUserService = async (email, password, res) => {
+const loginUserService = async (email, password) => {
   //see if this email is in db or not
   const user = await User.findOne({ email });
   if (!user) {
@@ -25,8 +25,8 @@ const loginUserService = async (email, password, res) => {
     throw new Error("Invalid email or password");
   }
 
-  //IF the credentials are correct then give him token and let him in
-  const accessToken = generateTokens(user, res);
+  //IF the credentials are correct then give him tokens and let him in
+  const { accessToken, refreshToken } = generateTokens(user);
   return {
     user: {
       id: user._id,
@@ -34,6 +34,7 @@ const loginUserService = async (email, password, res) => {
       name: user.username,
     },
     accessToken,
+    refreshToken,
   };
 };
 
