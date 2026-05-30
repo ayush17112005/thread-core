@@ -5,6 +5,8 @@ import {
   getMe,
   refreshAccessToken,
   logOut,
+  forgotPassword,
+  resetPassword,
 } from "../controllers/authController.js";
 import { protectRoute } from "../middlewares/authMiddleware.js";
 const router = express.Router();
@@ -17,5 +19,10 @@ router.post("/logout", logOut);
 //Return new access token when the old one expires
 router.post("/refresh-token", refreshAccessToken);
 router.get("/me", protectRoute, getMe);
+
+//Forgot password route
+router.post("/forgot-password", forgotPassword);
+//Reset password route
+router.patch("/reset-password/:token", resetPassword);
 
 export default router;
