@@ -3,6 +3,8 @@ import {
   loginUserService,
   getMeService,
   refreshAccessTokenService,
+  forgotPasswordService,
+  resetPasswordService,
 } from "../services/authService.js";
 
 const registerUser = async (req, res) => {
@@ -22,6 +24,8 @@ const registerUser = async (req, res) => {
       message: "User registered successfully",
     });
   } catch (e) {
+    //here we are using these if conditions to catch the specific error thrown from the service layer which is not good
+    //but for now we will do it like this, later we can implement a better error handling mechanism using custom error classes and an error handling middleware
     if (e.message === "Username or email already registered!!") {
       return res.status(401).json({ message: e.message });
     }
@@ -99,4 +103,56 @@ const getMe = async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 };
-export { registerUser, loginUser, getMe, refreshAccessToken, logOut };
+
+const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ message: "Please provide email" });
+    }
+    const result = await forgotPasswordService(email);
+    return res.status(200).json({
+      success: true,
+      message: result.message,
+    });
+  } catch (e) {
+    //Look how we have to catch the specific error thrown from the service layer to send and it's the bad practice,
+    // we should implement a better error handling mechanism using custom error classes and an error handling middleware
+    if (
+      e.message ===
+      "If a user with that email exists, a password reset link has been sent shortly"
+    ) {
+      return res.status(200).json({ message: e.message });
+    }
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+const resetPassword = async (req, res) => {
+  try {
+    const token = req.params.token;
+    const { newPassword } = req.body;
+    if (!token || !newPassword) {
+      return res.status(400).json({ message: "Invalid request" });
+    }
+    const result = await resetPasswordService(token, newPassword);
+    return res.status(200).json({
+      success: true,
+      message: result.message,
+    });
+  } catch (e) {
+    if (e.message === "Invalid or expired password reset token") {
+      return res.status(400).json({ message: e.message });
+    }
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+export {
+  registerUser,
+  loginUser,
+  getMe,
+  refreshAccessToken,
+  logOut,
+  forgotPassword,
+  resetPassword,
+};

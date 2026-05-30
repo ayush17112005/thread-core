@@ -26,6 +26,14 @@ const userSchema = new Schema(
       type: String,
       default: "",
     },
+    passwordResetToken: {
+      type: String,
+      default: undefined,
+    },
+    passwordResetTokenExpiration: {
+      type: Date,
+      default: undefined,
+    },
   },
   { timestamps: true }, //this will automatically add the createdAt and updatedAt fields to schema
 );
