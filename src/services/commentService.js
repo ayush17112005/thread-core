@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { User } from "../models/userSchema.js";
 import { Comment } from "../models/Comment.js";
 import { Community } from "../models/Community.js";
@@ -30,65 +31,99 @@ const createCommentService = async (
   if (!post) {
     throw new Error("Post not found");
   }
-  if (parentCommentId) {
+
+  const newCommentId = new mongoose.Types.ObjectId(); //Generate id before creating comment
+  let pathString = "";
+  if (!parentCommentId) {
+    //It's a root comment
+    //Path = postId.commentId
+    pathString = `${postId.toString()}.${newCommentId.toString()}`;
+  } else {
     const parentComment = await Comment.findById(parentCommentId);
     if (!parentComment) {
-      throw new Error("Parent Comment not found");
+      throw new Error("Parent comment not found");
     }
-    if (parentComment.postId.toString() !== postId) {
-      throw new Error("Parent Comment does not belong to this post");
-    }
+    pathString = `${parentComment.path.toString()}.${newCommentId.toString()}`;
   }
+
   const newComment = new Comment({
+    _id: newCommentId, //use this pre-generated id for the comment
     content,
     userId,
     postId,
     communityId,
     parentComment: parentCommentId || null,
+    path: pathString,
   });
   await newComment.save();
   return newComment;
 };
 
-const getPostCommentsService = async (postId, cursor, limit) => {
+const getPostCommentsService = async (postId, cursor, limit = 10) => {
   if (!postId) {
     throw new Error("Post Id is required");
   }
-  let query = {
+  let rootQuery = {
     postId,
     parentComment: null, //only fetch top level comments
   };
   if (cursor) {
-    query._id = { $lt: cursor };
+    rootQuery._id = { $lt: cursor };
   }
-  //Now fetch Comments
-  const comments = await Comment.find(query)
+  //Step1: Now fetch all the root Comments(comments with parentComment = null)
+  const rootComments = await Comment.find(rootQuery)
     .sort({ _id: -1 })
     .limit(limit + 1)
     .populate("userId", "username")
     .lean(); //use lean for faster queries since we don't need mongoose document methods here
-  const hasMore = comments.length > limit;
+  const hasMore = rootComments.length > limit;
   if (hasMore) {
-    comments.pop(); //remove the extra comment
+    rootComments.pop(); //remove the extra comment
   }
-  const newCursor = hasMore ? comments[comments.length - 1]._id : null;
+  const newCursor = hasMore ? rootComments[rootComments.length - 1]._id : null;
 
-  //Fetch toplevel ids
-  const topLevelId = comments.map((c) => c._id);
-  const replies = await Comment.find({
-    parentComment: { $in: topLevelId },
+  //If no comments just return early
+  if (rootComments.length === 0) {
+    return { comments: [], newCursor: null, hasMore: false };
+  }
+
+  //Step2: Fetch all the child comments(descendants)
+  //Since our path looks like A.B.C.D and '.' this is a special character in regex we need to escape it like this A\.B\.C\.D
+  const rootPaths = rootComments.map((r) => r.path.replace(/\./g, "\\.")); //note js treat \\. as \. in final regex
+  const regexPattern = `^(${rootPaths.join("|")})\\.`;
+
+  const descendants = await Comment.find({
+    postId,
+    path: { $regex: regexPattern },
   })
+    .sort({ path: 1 })
     .populate("userId", "username")
+    .limit(300)
     .lean();
 
-  //Attach the replies to their respective parent comments
-  const commentWithReplies = comments.map((c) => ({
-    ...c, //put this comment first
-    c_replies: replies.filter(
-      (r) => r.parentComment.toString() === c._id.toString(),
-    ), //then attach the replies to this comment
-  }));
-  return { comments: commentWithReplies, newCursor, hasMore };
+  //Step3: Assemble the infinite tree
+  const allComments = [...rootComments, ...descendants];
+  const commentMap = {};
+
+  allComments.forEach((comment) => {
+    commentMap[comment._id.toString()] = { ...comment, replies: [] };
+  });
+
+  const finalTree = [];
+
+  //Combine them together
+  allComments.forEach((comment) => {
+    if (comment.parentComment) {
+      const parentId = comment.parentComment.toString();
+      if (commentMap[parentId]) {
+        commentMap[parentId].replies.push(commentMap[comment._id.toString()]);
+      }
+    } else {
+      finalTree.push(commentMap[comment._id.toString()]);
+    }
+  });
+
+  return { comments: finalTree, newCursor, hasMore };
 };
 
 export { createCommentService, getPostCommentsService };
