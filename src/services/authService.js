@@ -4,11 +4,16 @@ import jwt from "jsonwebtoken";
 import { generateTokens } from "../utils/generateTokens.js";
 import { sendResetEmail } from "../utils/sendResetEmail.js";
 import crypto from "crypto";
+import {
+  UnauthorizedError,
+  ValidationError,
+  NotFoundError,
+} from "../utils/errors/customErrors.js";
 const registerUserService = async (username, email, password) => {
   //Check if user already exists
   const existingUser = await User.findOne({ $or: [{ username }, { email }] });
   if (existingUser) {
-    throw new Error("Username or email already registered!!");
+    throw new ValidationError("Username or email already registered!!");
   }
   //Create new user
   const newUser = new User({ username, email, password });
@@ -20,11 +25,11 @@ const loginUserService = async (email, password) => {
   //see if this email is in db or not
   const user = await User.findOne({ email });
   if (!user) {
-    throw new Error("Invalid email or password");
+    throw new UnauthorizedError("Invalid email or password");
   }
   const isMatch = await bcrypt.compare(password, user.password);
   if (!isMatch) {
-    throw new Error("Invalid email or password");
+    throw new UnauthorizedError("Invalid email or password");
   }
 
   //IF the credentials are correct then give him tokens and let him in
@@ -55,16 +60,17 @@ const refreshAccessTokenService = async (refreshToken) => {
 const getMeService = async (userId) => {
   const user = await User.findById(userId).select("-password");
   if (!user) {
-    throw new Error("User not found");
+    throw new NotFoundError("User not found");
   }
   return user;
 };
 const forgotPasswordService = async (email) => {
   const user = await User.findOne({ email });
   if (!user) {
-    throw new Error(
-      "If a user with that email exists, a password reset link has been sent shortly",
-    );
+    return {
+      message:
+        "If a user with that email exists, a password reset link has been sent shortly",
+    };
   }
   //Generate a password reset token and save it to the user's document
   const resetToken = crypto.randomBytes(32).toString("hex");
@@ -103,7 +109,7 @@ const resetPasswordService = async (resetToken, newPassword) => {
     passwordResetTokenExpiration: { $gt: Date.now() }, // Check if the token is not expired
   });
   if (!user) {
-    throw new Error("Invalid or expired password reset token");
+    throw new UnauthorizedError("Invalid or expired password reset token");
   }
   //Set the new Password of user
   user.password = newPassword;

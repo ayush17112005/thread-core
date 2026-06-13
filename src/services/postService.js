@@ -3,6 +3,11 @@ import { Post } from "../models/Post.js";
 import { SavePosts } from "../models/SavePosts.js";
 import { UserCommunity } from "../models/userCommunity.js";
 import { Vote } from "../models/Vote.js";
+import {
+  UnauthorizedError,
+  NotFoundError,
+  ForbiddenError,
+} from "../utils/errors/customErrors.js";
 const createPostService = async (
   userId,
   communityId,
@@ -16,7 +21,9 @@ const createPostService = async (
     community: communityId,
   });
   if (!isMember) {
-    throw new Error("You must be a member of the community to create a post");
+    throw new UnauthorizedError(
+      "You must be a member of the community to create a post",
+    );
   }
   //If user is a member then create the post
   const post = new Post({
@@ -35,14 +42,14 @@ const getSinglePostService = async (postId) => {
     .populate("communityId", "name")
     .lean();
   if (!post) {
-    throw new Error("Post not found");
+    throw new NotFoundError("Post not found");
   }
   return post;
 };
 const votePostService = async (postId, userId, voteType) => {
   const post = await Post.findById(postId);
   if (!post) {
-    throw new Error("Post does not exist");
+    throw new NotFoundError("Post does not exist");
   }
   const existingVote = await Vote.findOne({ postId, userId });
   if (existingVote) {
@@ -116,10 +123,10 @@ const getHomeFeedPostsService = async (cursor, limit) => {
 const deletePostService = async (postId, userId) => {
   const post = await Post.findById(postId);
   if (!post) {
-    throw new Error("Post does not exist");
+    throw new NotFoundError("Post does not exist");
   }
   if (post.userId.toString() !== userId) {
-    throw new Error("You are not authorized to delete this post");
+    throw new ForbiddenError("You are not authorized to delete this post");
   }
   //Query Optimization using promise.all
   await Promise.all([
@@ -132,7 +139,7 @@ const deletePostService = async (postId, userId) => {
 const savePostService = async (userId, postId) => {
   const post = await Post.findById(postId);
   if (!post) {
-    throw new Error("Post does not exist");
+    throw new NotFoundError("Post does not exist");
   }
 
   //Now if post already exists in the SavePosts then delete it
