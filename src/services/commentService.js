@@ -3,6 +3,10 @@ import { User } from "../models/userSchema.js";
 import { Comment } from "../models/Comment.js";
 import { Community } from "../models/Community.js";
 import { Post } from "../models/Post.js";
+import {
+  NotFoundError,
+  ValidationError,
+} from "../utils/errors/customErrors.js";
 const createCommentService = async (
   content,
   userId,
@@ -22,14 +26,14 @@ const createCommentService = async (
     Post.findById(postId),
   ]);
   if (!user) {
-    throw new Error("User not found");
+    throw new NotFoundError("User not found");
   }
   if (!community) {
-    throw new Error("Community not found");
+    throw new NotFoundError("Community not found");
   }
 
   if (!post) {
-    throw new Error("Post not found");
+    throw new NotFoundError("Post not found");
   }
 
   const newCommentId = new mongoose.Types.ObjectId(); //Generate id before creating comment
@@ -41,7 +45,7 @@ const createCommentService = async (
   } else {
     const parentComment = await Comment.findById(parentCommentId);
     if (!parentComment) {
-      throw new Error("Parent comment not found");
+      throw new NotFoundError("Parent comment not found");
     }
     pathString = `${parentComment.path.toString()}.${newCommentId.toString()}`;
   }
@@ -61,7 +65,7 @@ const createCommentService = async (
 
 const getPostCommentsService = async (postId, cursor, limit = 10) => {
   if (!postId) {
-    throw new Error("Post Id is required");
+    throw new ValidationError("Post Id is required");
   }
   let rootQuery = {
     postId,

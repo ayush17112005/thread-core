@@ -3,6 +3,10 @@ import { UserCommunity } from "../models/userCommunity.js";
 import { Post } from "../models/Post.js";
 import { Comment } from "../models/Comment.js";
 import { Vote } from "../models/Vote.js";
+import {
+  NotFoundError,
+  ValidationError,
+} from "../utils/errors/customErrors.js";
 const createCommunityService = async (name, adminId, description) => {
   // 1. Force lowercase and replace all spaces with underscores
   const formattedName = name.trim().toLowerCase().replace(/\s+/g, "_");
@@ -12,7 +16,7 @@ const createCommunityService = async (name, adminId, description) => {
     name: formattedName,
   });
   if (existingCommunity) {
-    throw new Error("Community name already taken");
+    throw new ValidationError("Community name already taken");
   }
   const newCommunity = new Community({
     name: formattedName,
@@ -35,7 +39,7 @@ const joinCommunityService = async (communityId, userId) => {
   //see if the community exists
   const community = await Community.findById(communityId);
   if (!community) {
-    throw new Error("Community does not exist");
+    throw new NotFoundError("Community does not exist");
   }
   //see if the user is already a member
   const existingLink = await UserCommunity.findOne({
@@ -43,7 +47,7 @@ const joinCommunityService = async (communityId, userId) => {
     community: communityId,
   });
   if (existingLink) {
-    throw new Error("User already a member of this community");
+    throw new ValidationError("User already a member of this community");
   }
   //Now if all okay then create a link between user and community
   const newMemberLink = new UserCommunity({
@@ -65,7 +69,7 @@ const joinCommunityService = async (communityId, userId) => {
 const leaveCommunityService = async (communityId, userId) => {
   const community = await Community.findById(communityId);
   if (!community) {
-    throw new Error("Community does not exist");
+    throw new NotFoundError("Community does not exist");
   }
 
   if (community.admin.toString() === userId) {
@@ -89,7 +93,9 @@ const leaveCommunityService = async (communityId, userId) => {
       }).sort({ createdAt: 1 });
       // Safety check!
       if (!oldestMemberLink) {
-        throw new Error("Could not find a successor to transfer admin rights.");
+        throw new NotFoundError(
+          "Could not find a successor to transfer admin rights.",
+        );
       }
       const updatedCommunity = await Community.findOneAndUpdate(
         // renamed
@@ -115,7 +121,7 @@ const leaveCommunityService = async (communityId, userId) => {
       community: communityId,
     });
     if (!link) {
-      throw new Error("User is not a member of this community");
+      throw new NotFoundError("User is not a member of this community");
     }
     await Community.findByIdAndUpdate(communityId, {
       $inc: { membersCount: -1 },

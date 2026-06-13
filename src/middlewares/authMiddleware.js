@@ -1,4 +1,6 @@
 import jwt from "jsonwebtoken";
+import { UnauthorizedError } from "../utils/errors/customErrors.js";
+
 export const protectRoute = (req, res, next) => {
   try {
     const authHeader = req.headers["authorization"];
@@ -6,7 +8,7 @@ export const protectRoute = (req, res, next) => {
       ? authHeader.split(" ")[1]
       : null;
     if (!token) {
-      return res.status(401).json({ message: "Unauthorized User" });
+      throw new UnauthorizedError("No token provided");
     }
     //If token is there then verify it
     const verifiedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
@@ -15,8 +17,11 @@ export const protectRoute = (req, res, next) => {
     next();
   } catch (e) {
     if (e.name === "TokenExpiredError") {
-      return res.status(401).json({ message: "Token Expired" });
+      return next(new UnauthorizedError("Token has expired"));
     }
-    return res.status(401).json({ message: "Invalid Token" });
+    if (e instanceof UnauthorizedError) {
+      return next(e);
+    }
+    return next(new UnauthorizedError("Invalid token"));
   }
 };
