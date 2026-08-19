@@ -8,6 +8,7 @@ import communityRoutes from "./src/routes/communityRoutes.js";
 import postRoutes from "./src/routes/postRoutes.js";
 import { errorHandler } from "./src/middlewares/errorHandler.js";
 dotenv.config();
+
 const app = express();
 app.use(express.json());
 app.use(cookieParser());
